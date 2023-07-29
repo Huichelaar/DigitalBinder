@@ -5,7 +5,7 @@ This is a very barebones and shoddy implementation of a virtual binder for colle
 - The program may crash. I haven't found a consistent procedure for reproducing this issue unfortunately.
 - The program leaks memory. Whenever a new binder or expansion is selected, the previous one does not get cleared.
 
-As such I haven't added a release yet.
+As such I haven't published a release yet. Granted, I have no plans of further working on this project.
 
 ## Binders
 Binders are stored as .txt files. Each line in such a file corresponds to a relative path to an image file of the card that cardslot in the binder holds. If you want to create a new binder file with, say, room for 180 cards, you'll have to add 180 `Placeholder.png` lines to the file. [binderEmpty360.txt](binders/binderEmpty360.txt) serves as an example of an empty binder with room for 360 cards.
@@ -21,11 +21,7 @@ Cards are expected to be .png files, size 245x342. They need to be organized by 
 
 DigitalBinder, by default, is setup for Pokémon TCG cards specifically. [ptcgExpansionDictionary.py](ptcgExpansionDictionary.py) is used to map and sort the expansion subdirectories in [cards](cards) to the names and release order of the expansion they represent. You can replace this dictionary and its `import` in [DigitalBinder.py](DigitalBinder.py) with a different one for different cards' expansions.
 
-Whilst this repo doesn't come with any cards, they can be downloaded from elsewhere. You can run
-`python3 url/generateURL.py`
-to generate textfiles containing urls. If you have `wget` You can then run:
-`wget -r -nv --no-parent -i <urlFileName>.txt -o out.txt`
-replacing <urlFileName> with any of the previously generated `.txt` files to download pokémon card pngs from the (I believe) official website. Any `404 not found` errors for cards that couldn't be found can be found in the generated `out.txt` file. From what I can tell, this website doesn't have .pngs from cards that were released prior to the EX-era (~2003).
+Whilst this repo doesn't come with any cards, they can be downloaded from elsewhere. You can run `python3 url/generateURL.py` to generate textfiles containing urls. If you have `wget` You can then run `wget -r -nv --no-parent -i <urlFileName>.txt -o out.txt`, replacing `<urlFileName>` with any of the previously generated `.txt` files to download pokémon card pngs from the (I believe) official website. Any `404 not found` errors for cards that couldn't be found can be found in the generated `out.txt` file. From what I can tell, this website doesn't have .pngs from cards that were released prior to the EX-era (~2003).
 
 ## Saving
 During execution of DigitalBinder, by pressing the save button, a backup of the binder as it were after the last save is saved in [backups](binders/backups) with a timestamp in the name. Then, the original binder's file gets overwritten.
