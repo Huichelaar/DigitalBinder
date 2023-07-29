@@ -1,0 +1,8 @@
+**/*__pycache__
+
+*.png
+!Placeholder.png
+!PlaceholderFilled.png
+
+binders/*.txt
+!binders/binderEmpty360.txt
