@@ -111,5 +111,7 @@ dict = {
   "Crown Zenith": "SWSH12PT5",
   "Scarlet & Violet—Promo": "SVP",
   "Scarlet & Violet": "SV01",
-  "Scarlet & Violet—Paldea Evolved": "SV02"
+  "Scarlet & Violet—Paldea Evolved": "SV02",
+  "Scarlet & Violet—Obsidian Flames": "SV03",
+  "Scarlet & Violet—151": "SV3PT5"
 }

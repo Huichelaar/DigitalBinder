@@ -5,4 +5,5 @@
 !PlaceholderFilled.png
 
 binders/*.txt
-!binders/binderEmpty360.txt
+binders/backups/*.txt
+!binderEmpty360.3x3.txt

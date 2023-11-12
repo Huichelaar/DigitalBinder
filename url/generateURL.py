@@ -51,7 +51,7 @@ SWSHP = ("SWSHP", [307])
 SWSH = ("SWSH", [216, 209, 201, 80, 203, 73, 122, 183, 233, 237, 25, 25, 284, 186, 30, 216, 30, 88, 217, 30, 215, 30, 160, 70])
 
 # Leading zero in expansion number. No leading zeroes to card numbers.
-SV = ("SV0", [258, 279])
+SV = ("SV0", [258, 279, 230, 204])
 
 
 # Params.
@@ -319,7 +319,13 @@ f.close()
 # SV
 f = open("sv.txt", "w")
 series += 1
+incr = 1
 for i, expansionSize in enumerate(cards[series][1]):
-  for j in range(1, expansionSize+1):
-    f.write(path + cards[series][0] + str(i+1) + "/" + cards[series][0] + str(i+1) + "_" + lang + "_" + str(j) + ".png\n")
+  if i+1 == 4:
+    incr -= 1
+    for j in range(1, expansionSize+1):
+      f.write(path + "SV3PT5/SV3PT5_" + lang + "_" + str(j) + ".png\n")
+  else:
+    for j in range(1, expansionSize+1):
+      f.write(path + cards[series][0] + str(i+1) + "/" + cards[series][0] + str(i+1) + "_" + lang + "_" + str(j) + ".png\n")
 f.close()

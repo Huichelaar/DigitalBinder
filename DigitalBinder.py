@@ -1,6 +1,13 @@
 # This thing can crash easily. I haven't found the cause(s).
 # Also leaks memory (BinderCards don't get cleared when selecting a new binder, ExpansionCards don't get cleared when loading a new expansion), so save and exit frequently I suppose.
 # For the life of me, I can't figure out how to make it stop, sorry.
+#
+# Build executable using pyinstaller:
+#
+# pyinstaller -F -w DigitalBinder.py
+#
+#   -F for one file executable.
+#   -w for not displaying a console/command window.
 from tkinter import *
 from tkinter import ttk
 from datetime import datetime
@@ -10,8 +17,6 @@ import ptcgExpansionDictionary as expansionDictionary
 
 EXPANSIONMENUCOLCOUNT = 3
 EXPANSIONMENUROWCOUNT = 4
-BINDERPAGEWIDTH = 3
-BINDERPAGEHEIGHT = 3
 
 UNDOBUFFER_SIZE = 100
 
@@ -64,25 +69,9 @@ class Window:
     self.expFrame.grid(row=0, column=0, sticky=N+W)
     self.exp = Expansion(self.expFrame, self)
 
-    # Separators.
-    '''
-    Label(self.root, bg="lightgrey").grid(row=0,
-                                     column=EXPANSIONMENUCOLCOUNT + 1,
-                                     ipadx=75)
-    Frame(self.root, bg="black").grid(row=1,
-                                 column=EXPANSIONMENUCOLCOUNT + 2 + BINDERPAGEWIDTH,
-                                 ipadx=10,
-                                 rowspan=BINDERPAGEHEIGHT,
-                                 sticky=N+S)
-    '''
-
     # Binder menu.
     self.binderFrame = Frame(self.root, bg="lightgrey", bd=5, relief=GROOVE)
     self.binderFrame.grid(row=0, column=1, padx=100, sticky=N+E)
-    
-    # Binder separator
-    self.binderFrameSeparator = Frame(self.binderFrame, bg="black")
-    self.binderFrameSeparator.grid(row=1, column=BINDERPAGEWIDTH, ipadx=10, rowspan=BINDERPAGEHEIGHT, sticky=N+S)
     
     self.binder = Binder(self.binderFrame, self)
     self.root.bind("<Motion>", self.clearCard)
@@ -298,51 +287,43 @@ class Binder:
   def __init__(self, parent, window):
     self.parent = parent
     self.window = window
+    self.frameSeparator = None
+    self.BINDERPAGEWIDTH = 0
+    self.BINDERPAGEHEIGHT = 0
     self.pages = list()
     self.vals = os.listdir(os.getcwd()+"/binders/")
     self.vals = [f for f in self.vals if os.path.isfile("binders/" + f)]
+    
+    # Frame separator. This is the black bar between two open pages.
+    self.frameSeparator = Frame(self.parent, bg="black")
+    
+    # Combobox binder selection.
     self.bind = ttk.Combobox(self.parent, values=self.vals, exportselection=0)
     self.bind.current([0])
     self.bind.state(['readonly'])
     self.bind.bind("<<ComboboxSelected>>", self.load)
-    self.bind.grid(row=0, column=BINDERPAGEWIDTH, columnspan=BINDERPAGEWIDTH*2, padx=5, pady=5, sticky=E)
-    
-    # Undo/Redo buffer.
-    self.undoBufferStart = UndoBufferElement(BUFFER_START, None)
-    self.undoBufferCurrent = self.undoBufferStart
-    self.undoIndex = 0
     
     # Buttons.
     text = StringVar()
     text.set(">")
     self.buttonNextPage = Button(self.parent, textvariable=text, command=self.nextPage)
-    self.buttonNextPage.grid(row=BINDERPAGEHEIGHT+1,
-                             column=BINDERPAGEWIDTH*2 - 1,
-                             padx=5, pady=5, sticky=N+E)
     text = StringVar()
     text.set(">>")
     self.buttonLastPage = Button(self.parent, textvariable=text, command=self.lastPage)
-    self.buttonLastPage.grid(row=BINDERPAGEHEIGHT+1,
-                             column=BINDERPAGEWIDTH*2,
-                             padx=5, pady=5, sticky=N+E)
     text = StringVar()
     text.set("<")
     self.buttonPrevPage = Button(self.parent, textvariable=text, command=self.prevPage)
-    self.buttonPrevPage.grid(row=BINDERPAGEHEIGHT+1,
-                             column=1,
-                             padx=5, pady=5, sticky=N+W)
     text = StringVar()
     text.set("<<")
     self.buttonFirstPage = Button(self.parent, textvariable=text, command=self.firstPage)
-    self.buttonFirstPage.grid(row=BINDERPAGEHEIGHT+1,
-                              column=0,
-                              padx=5, pady=5, sticky=N+W)
     text = StringVar()
     text.set("Save")
     self.buttonSave = Button(self.parent, textvariable=text, command=self.save)
-    self.buttonSave.grid(row=1,
-                         column=BINDERPAGEWIDTH*2+1,
-                         padx=5, pady=5, sticky=N+E)
+    
+    # Undo/Redo buffer.
+    self.undoBufferStart = UndoBufferElement(BUFFER_START, None)
+    self.undoBufferCurrent = self.undoBufferStart
+    self.undoIndex = 0
     
     # Load binder.
     self.load()
@@ -463,7 +444,12 @@ class Binder:
   
   # Loads pages.
   def load(self, event=None):
-  
+    # Clear BinderCards.
+    [page.unload() for page in self.pages]
+    f = open("binders/" + self.bind.get())
+    self.lines = f.readlines()
+    f.close()
+    
     # Clear Undo/Redo buffer.
     undoBufferElement = self.undoBufferStart
     while undoBufferElement.next:
@@ -473,14 +459,37 @@ class Binder:
     self.undoBufferCurrent = self.undoBufferStart
     self.undoIndex = 0
     
-    # Clear BinderCards.
-    [page.unload() for page in self.pages]  
-    f = open("binders/" + self.bind.get())
-    self.lines = f.readlines()
-    f.close()
+    # Determine dimensions.
+    # Assumes both width and height are single digit numbers preceding a three-char file extension.
+    filename = self.bind.get()
+    self.BINDERPAGEWIDTH = int(filename[-7])
+    self.BINDERPAGEHEIGHT = int(filename[-5])
+    
+    # Place page separator.
+    self.frameSeparator.grid(row=1, column=self.BINDERPAGEWIDTH, ipadx=10, rowspan=self.BINDERPAGEHEIGHT, sticky=N+S)
+    
+    # Place binder select combobox.
+    self.bind.grid(row=0, column=self.BINDERPAGEWIDTH, columnspan=self.BINDERPAGEWIDTH*2, padx=5, pady=5, sticky=E)
+    
+    # Place buttons.
+    self.buttonNextPage.grid(row=self.BINDERPAGEHEIGHT+1,
+                             column=self.BINDERPAGEWIDTH*2 - 1,
+                             padx=5, pady=5, sticky=N+E)
+    self.buttonLastPage.grid(row=self.BINDERPAGEHEIGHT+1,
+                             column=self.BINDERPAGEWIDTH*2,
+                             padx=5, pady=5, sticky=N+E)
+    self.buttonPrevPage.grid(row=self.BINDERPAGEHEIGHT+1,
+                             column=1,
+                             padx=5, pady=5, sticky=N+W)
+    self.buttonFirstPage.grid(row=self.BINDERPAGEHEIGHT+1,
+                              column=0,
+                              padx=5, pady=5, sticky=N+W)
+    self.buttonSave.grid(row=1,
+                         column=self.BINDERPAGEWIDTH*2+1,
+                         padx=5, pady=5, sticky=N+E)
     
     self.onPage = 0
-    self.pageCount = math.ceil(len(self.lines) / (BINDERPAGEWIDTH * BINDERPAGEHEIGHT))
+    self.pageCount = math.ceil(len(self.lines) / (self.BINDERPAGEWIDTH * self.BINDERPAGEHEIGHT))
     self.pages = [BinderPage(self.parent, self, i) for i in range(self.pageCount+1)]
     self.refresh()
   
@@ -557,14 +566,14 @@ class BinderPage:
     self.parent = parent
     self.binder = binder
     self.offs = offs
-    self.cards = [BinderCard(self.parent, self, i) for i in range(BINDERPAGEWIDTH * BINDERPAGEHEIGHT)]
+    self.cards = [BinderCard(self.parent, self, i) for i in range(self.binder.BINDERPAGEWIDTH * self.binder.BINDERPAGEHEIGHT)]
   
   def unload(self):
-    for i in range(BINDERPAGEWIDTH * BINDERPAGEHEIGHT):
+    for i in range(self.binder.BINDERPAGEWIDTH * self.binder.BINDERPAGEHEIGHT):
       self.cards[i].unload()
   
   def load(self):
-    for i in range(BINDERPAGEWIDTH * BINDERPAGEHEIGHT):
+    for i in range(self.binder.BINDERPAGEWIDTH * self.binder.BINDERPAGEHEIGHT):
       self.cards[i].load()
 
 class BinderCard:
@@ -573,7 +582,7 @@ class BinderCard:
     self.page = page
     self.offs = offs
     self.dragger = None
-    self.offs2 = (self.page.offs-1) * BINDERPAGEWIDTH * BINDERPAGEHEIGHT + self.offs
+    self.offs2 = (self.page.offs-1) * self.page.binder.BINDERPAGEWIDTH * self.page.binder.BINDERPAGEHEIGHT + self.offs
     if self.offs2 >= len(self.page.binder.lines) or self.page.offs == 0:
       relImgPath = "/cards/Placeholder.png"
     else:
@@ -593,10 +602,10 @@ class BinderCard:
     self.label.grid_remove()
   
   def load(self):
-    row = int(1 + (self.offs / BINDERPAGEHEIGHT))
-    col = int(self.offs % BINDERPAGEWIDTH)
+    row = int(1 + (self.offs / self.page.binder.BINDERPAGEWIDTH))
+    col = int(self.offs % self.page.binder.BINDERPAGEWIDTH)
     if (self.page.offs & 1):
-      col += BINDERPAGEWIDTH+1        # For right page.
+      col += self.page.binder.BINDERPAGEWIDTH+1        # For right page.
     self.label.grid(row=row, column=col, padx=5, pady=5, sticky=W)
     self.label.bind("<Enter>", self.change)
     self.label.bind("<Button-1>", self.select)
